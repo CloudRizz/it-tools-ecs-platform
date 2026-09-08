@@ -19,7 +19,7 @@ resource "aws_subnet" "public_a" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = "10.0.1.0/24"
   availability_zone       = "eu-west-2a"
-  map_public_ip_on_launch = true # Required for public subnets to automatically assign public IPs to instances launched in this subnet
+  map_public_ip_on_launch = false # Required for public subnets to automatically assign public IPs to instances launched in this subnet
 
   tags = merge(
     local.common_tags,
@@ -34,7 +34,7 @@ resource "aws_subnet" "public_b" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = "10.0.2.0/24"
   availability_zone       = "eu-west-2b"
-  map_public_ip_on_launch = true
+  map_public_ip_on_launch = false
 
   tags = merge(
     local.common_tags,
@@ -134,5 +134,48 @@ resource "aws_route_table_association" "private_a" {
 resource "aws_route_table_association" "private_b" {
   subnet_id      = aws_subnet.private_b.id
   route_table_id = aws_route_table.private.id
+}
+
+# S3 Gateway Endpoint - Allows private subnets to access S3 without going through the internet
+resource "aws_vpc_endpoint" "s3" {
+  vpc_id            = aws_vpc.main.id
+  service_name      = "com.amazonaws.${var.aws_region}.s3"
+  vpc_endpoint_type = "Gateway"
+
+  route_table_ids = [
+    aws_route_table.private.id
+  ]
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.project_name}-s3-vpce"
+    }
+  )
+}
+
+# creates private entrypoint for ECR API inside VPC, allowing private subnets to access ECR without going through the internet
+# referencing subnets tells AWS to create network interfaces in the specified subnets for private connectivity to the service
+resource "aws_vpc_endpoint" "ecr_api" {
+  vpc_id              = aws_vpc.main.id
+  service_name        = "com.amazonaws.${var.aws_region}.ecr.api"
+  vpc_endpoint_type   = "Interface" # Change to "Interface" as creates network interfaces in the specified subnets below for private connectivity to the service
+  private_dns_enabled = true # DNS 
+
+  subnet_ids = [
+    aws_subnet.private_a.id,
+    aws_subnet.private_b.id
+  ]
+
+  security_group_ids = [
+    aws_security_group.vpc_endpoints.id
+  ]
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.project_name}-ecr-api-vpce"
+    }
+  )
 }
 
