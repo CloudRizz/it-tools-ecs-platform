@@ -19,7 +19,7 @@ resource "aws_subnet" "public_a" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = "10.0.1.0/24"
   availability_zone       = "eu-west-2a"
-  map_public_ip_on_launch = false # Required for public subnets to automatically assign public IPs to instances launched in this subnet
+  map_public_ip_on_launch = false # Do not automatically assign public IPs to resources launched in this subnet
 
   tags = merge(
     local.common_tags,
@@ -136,7 +136,7 @@ resource "aws_route_table_association" "private_b" {
   route_table_id = aws_route_table.private.id
 }
 
-# S3 Gateway Endpoint - Allows private subnets to access S3 without going through the internet
+# S3 Gateway Endpoint - Provides private S3 connectivity through the private route table without NAT or an Internet Gateway
 resource "aws_vpc_endpoint" "s3" {
   vpc_id            = aws_vpc.main.id
   service_name      = "com.amazonaws.${var.aws_region}.s3"
@@ -149,7 +149,7 @@ resource "aws_vpc_endpoint" "s3" {
   tags = merge(
     local.common_tags,
     {
-      Name = "${local.project_name}-s3-vpce"
+      Name = "${local.project_name}-s3-endpoint"
     }
   )
 }
@@ -159,8 +159,8 @@ resource "aws_vpc_endpoint" "s3" {
 resource "aws_vpc_endpoint" "ecr_api" {
   vpc_id              = aws_vpc.main.id
   service_name        = "com.amazonaws.${var.aws_region}.ecr.api"
-  vpc_endpoint_type   = "Interface" # Change to "Interface" as creates network interfaces in the specified subnets below for private connectivity to the service
-  private_dns_enabled = true # DNS 
+  vpc_endpoint_type   = "Interface" # Creates endpoint ENIs in the selected private subnets
+  private_dns_enabled = true        #  Resolves the standard ECR API hostname to the endpoint's private IPs inside the VPC
 
   subnet_ids = [
     aws_subnet.private_a.id,
@@ -174,8 +174,59 @@ resource "aws_vpc_endpoint" "ecr_api" {
   tags = merge(
     local.common_tags,
     {
-      Name = "${local.project_name}-ecr-api-vpce"
+      Name = "${local.project_name}-ecr-api-endpoint"
     }
   )
 }
 
+# ECR Docker endpoint - Provides private access for ECS to pull container images from ECR
+resource "aws_vpc_endpoint" "ecr_dkr" {
+  vpc_id              = aws_vpc.main.id
+  service_name        = "com.amazonaws.${var.aws_region}.ecr.dkr"
+  vpc_endpoint_type   = "Interface"
+  private_dns_enabled = true
+
+  subnet_ids = [
+    aws_subnet.private_a.id,
+    aws_subnet.private_b.id
+  ]
+
+  security_group_ids = [
+    aws_security_group.vpc_endpoints.id
+  ]
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.project_name}-ecr-dkr-endpoint"
+    }
+  )
+}
+
+# CloudWatch Logs endpoint - Allows private ECS tasks to send container logs to CloudWatch without NAT
+resource "aws_vpc_endpoint" "logs" {
+  vpc_id              = aws_vpc.main.id
+  service_name        = "com.amazonaws.${var.aws_region}.logs"
+  vpc_endpoint_type   = "Interface"
+  private_dns_enabled = true
+
+  subnet_ids = [
+    aws_subnet.private_a.id,
+    aws_subnet.private_b.id
+  ]
+
+  security_group_ids = [
+    aws_security_group.vpc_endpoints.id
+  ]
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.project_name}-logs-endpoint"
+    }
+  )
+}
+
+data "aws_prefix_list" "s3" {
+  name = "com.amazonaws.${var.aws_region}.s3"
+}

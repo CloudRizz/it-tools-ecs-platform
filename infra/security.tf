@@ -101,3 +101,13 @@ resource "aws_vpc_security_group_egress_rule" "alb_to_ecs" {
   from_port   = 8080
   ip_protocol = "tcp"
 }
+
+resource "aws_vpc_security_group_egress_rule" "ecs_to_s3" {
+  security_group_id = aws_security_group.ecs.id
+
+  prefix_list_id = data.aws_prefix_list.s3.id # Allow traffic to S3 prefix list only
+
+  to_port     = 443
+  from_port   = 443
+  ip_protocol = "tcp"
+}
