@@ -1,0 +1,114 @@
+name: Deploy IT Tools
+
+on:
+  push:
+    branches:
+      - main
+
+# Required for GitHub OIDC authentication to AWS
+permissions:
+  id-token: write
+  contents: read
+
+# Repository variables used throughout the workflow
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+  ECR_REPOSITORY_URL: ${{ vars.ECR_REPOSITORY_URL }}
+  TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Download the repository contents onto the GitHub Actions runner
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Authenticate to AWS using GitHub OIDC instead of long-lived access keys
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # Authenticate Docker with Amazon ECR
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # Build the application image, tag it with the current Git commit SHA
+      # and push it to the ECR repository
+      - name: Build and push Docker image
+        run: |
+          IMAGE_TAG=${{ github.sha }}
+
+          docker build \
+            -t $ECR_REPOSITORY_URL:$IMAGE_TAG \
+            ./app
+
+          docker push \
+            $ECR_REPOSITORY_URL:$IMAGE_TAG
+
+      # Install Terraform on the GitHub Actions runner
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      # Initialise Terraform and connect to the remote S3 state
+      # created by the bootstrap Terraform configuration
+      - name: Terraform Init
+        working-directory: infra
+        run: |
+          terraform init \
+            -backend-config="bucket=$TF_STATE_BUCKET"
+
+      # Preview the infrastructure changes before applying them
+      # The ECS task definition will use the Docker image from this commit
+      - name: Terraform Plan
+        working-directory: infra
+        run: |
+          terraform plan \
+            -var="image_tag=${{ github.sha }}" \
+            -var="desired_count=1"
+
+      # Apply the infrastructure changes automatically
+      # This deploys one ECS Fargate task using the new Docker image
+      - name: Terraform Apply
+        working-directory: infra
+        run: |
+          terraform apply -auto-approve \
+            -var="image_tag=${{ github.sha }}" \
+            -var="desired_count=1"
+
+      - name: Wait for ECS service stability
+        run: |
+          aws ecs wait services-stable \
+            --cluster it-tools-cluster \
+            --services it-tools-service \
+            --region $AWS_REGION
+
+      # Verify the deployed application is healthy through the public HTTPS endpoint
+      # Retry while ECS starts the task and the ALB completes its health checks
+      - name: Verify deployment health
+        run: |
+          HEALTH_URL="https://it-tools.twrz.co.uk/health"
+
+          echo "Waiting for application to become healthy..."
+
+          # Initial buffer to allow ECS deployment and ALB target registration to begin
+
+          sleep 30
+
+          for attempt in {1..20}; do
+            RESPONSE=$(curl --silent --fail "$HEALTH_URL" || true)
+
+            if [ "$RESPONSE" = '{"status":"ok"}' ]; then
+              echo "Deployment successful - application is healthy."
+              exit 0
+            fi
+
+            echo "Attempt $attempt/12 failed. Retrying in 15 seconds..."
+            sleep 15
+          done
+
+          echo "Deployment health check failed."
+          exit 1
