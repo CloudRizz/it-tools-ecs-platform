@@ -88,62 +88,7 @@ The final platform includes:
 
 # Architecture
 
-```mermaid
-flowchart TB
-
-    USER[Internet User]
-    DNS[Route 53]
-    ALB[Application Load Balancer<br/>HTTPS :443]
-
-    USER --> DNS
-    DNS --> ALB
-
-    subgraph VPC["AWS VPC - 10.0.0.0/16"]
-
-        subgraph PUBLIC["Public Subnets"]
-            PA[eu-west-2a<br/>10.0.1.0/24]
-            PB[eu-west-2b<br/>10.0.2.0/24]
-        end
-
-        ALB --- PA
-        ALB --- PB
-
-        TG[Target Group<br/>HTTP :8080<br/>Health: /health]
-
-        subgraph PRIVATE["Private Subnets"]
-            PRA[eu-west-2a<br/>10.0.11.0/24]
-            PRB[eu-west-2b<br/>10.0.12.0/24]
-
-            ECS[ECS Fargate Service<br/>No Public IP]
-
-            ECRAPI[ECR API<br/>VPC Endpoint]
-            ECRDKR[ECR DKR<br/>VPC Endpoint]
-            LOGS[CloudWatch Logs<br/>VPC Endpoint]
-        end
-
-        PRA --- ECS
-        PRB --- ECS
-
-        S3EP[S3 Gateway Endpoint]
-
-        ALB --> TG
-        TG --> ECS
-
-        ECS --> ECRAPI
-        ECS --> ECRDKR
-        ECS --> LOGS
-        ECS --> S3EP
-    end
-
-    ECR[(Amazon ECR)]
-    CW[(CloudWatch Logs)]
-    S3[(Amazon S3)]
-
-    ECRAPI --> ECR
-    ECRDKR --> ECR
-    LOGS --> CW
-    S3EP --> S3
-```
+![alt text](<docs/images/architecture -   it-tools.png>)
 
 ## Architecture at a Glance
 
