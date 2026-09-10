@@ -16,6 +16,10 @@ The final architecture places the public Application Load Balancer in two public
 - automated deployment health checks
 - automated infrastructure teardown and verification
 
+**Demo:**
+<video controls src="docs/images/Recording 2026-09-10 163416.mp4" title="Title"></video>
+
+
 > **Project status:** Successfully deployed and validated over HTTPS through both Terraform and GitHub Actions. The AWS project infrastructure was subsequently destroyed to avoid unnecessary ongoing costs.
 
 ---
