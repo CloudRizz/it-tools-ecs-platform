@@ -7,9 +7,9 @@ resource "aws_vpc" "main" {
   enable_dns_hostnames = true
 
   tags = merge(
-    local.common_tags,
+    var.common_tags,
     {
-      Name = "${local.project_name}-vpc"
+      Name = "${var.project_name}-vpc"
     }
   )
 }
@@ -22,9 +22,9 @@ resource "aws_subnet" "public_a" {
   map_public_ip_on_launch = false # Do not automatically assign public IPs to resources launched in this subnet
 
   tags = merge(
-    local.common_tags,
+    var.common_tags,
     {
-      Name = "${local.project_name}-public-a"
+      Name = "${var.project_name}-public-a"
     }
   )
 }
@@ -37,9 +37,9 @@ resource "aws_subnet" "public_b" {
   map_public_ip_on_launch = false
 
   tags = merge(
-    local.common_tags,
+    var.common_tags,
     {
-      Name = "${local.project_name}-public-b"
+      Name = "${var.project_name}-public-b"
     }
   )
 }
@@ -51,9 +51,9 @@ resource "aws_subnet" "private_a" {
   availability_zone = "eu-west-2a"
 
   tags = merge(
-    local.common_tags,
+    var.common_tags,
     {
-      Name = "${local.project_name}-private-a"
+      Name = "${var.project_name}-private-a"
     }
   )
 }
@@ -65,9 +65,9 @@ resource "aws_subnet" "private_b" {
   availability_zone = "eu-west-2b"
 
   tags = merge(
-    local.common_tags,
+    var.common_tags,
     {
-      Name = "${local.project_name}-private-b"
+      Name = "${var.project_name}-private-b"
     }
   )
 }
@@ -78,9 +78,9 @@ resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
 
   tags = merge(
-    local.common_tags,
+    var.common_tags,
     {
-      Name = "${local.project_name}-igw"
+      Name = "${var.project_name}-igw"
     }
   )
 }
@@ -95,9 +95,9 @@ resource "aws_route_table" "public" {
   }
 
   tags = merge(
-    local.common_tags,
+    var.common_tags,
     {
-      Name = "${local.project_name}-public-rt"
+      Name = "${var.project_name}-public-rt"
     }
   )
 }
@@ -118,9 +118,9 @@ resource "aws_route_table" "private" {
   vpc_id = aws_vpc.main.id
 
   tags = merge(
-    local.common_tags,
+    var.common_tags,
     {
-      Name = "${local.project_name}-private-rt"
+      Name = "${var.project_name}-private-rt"
     }
   )
 }
@@ -147,86 +147,10 @@ resource "aws_vpc_endpoint" "s3" {
   ]
 
   tags = merge(
-    local.common_tags,
+    var.common_tags,
     {
-      Name = "${local.project_name}-s3-endpoint"
+      Name = "${var.project_name}-s3-endpoint"
     }
   )
 }
 
-# creates private entrypoint for ECR API inside VPC, allowing private subnets to access ECR without going through the internet
-# referencing subnets tells AWS to create network interfaces in the specified subnets for private connectivity to the service
-resource "aws_vpc_endpoint" "ecr_api" {
-  vpc_id              = aws_vpc.main.id
-  service_name        = "com.amazonaws.${var.aws_region}.ecr.api"
-  vpc_endpoint_type   = "Interface" # Creates endpoint ENIs in the selected private subnets
-  private_dns_enabled = true        #  Resolves the standard ECR API hostname to the endpoint's private IPs inside the VPC
-
-  subnet_ids = [
-    aws_subnet.private_a.id,
-    aws_subnet.private_b.id
-  ]
-
-  security_group_ids = [
-    aws_security_group.vpc_endpoints.id
-  ]
-
-  tags = merge(
-    local.common_tags,
-    {
-      Name = "${local.project_name}-ecr-api-endpoint"
-    }
-  )
-}
-
-# ECR Docker endpoint - Provides private access for ECS to pull container images from ECR
-resource "aws_vpc_endpoint" "ecr_dkr" {
-  vpc_id              = aws_vpc.main.id
-  service_name        = "com.amazonaws.${var.aws_region}.ecr.dkr"
-  vpc_endpoint_type   = "Interface"
-  private_dns_enabled = true
-
-  subnet_ids = [
-    aws_subnet.private_a.id,
-    aws_subnet.private_b.id
-  ]
-
-  security_group_ids = [
-    aws_security_group.vpc_endpoints.id
-  ]
-
-  tags = merge(
-    local.common_tags,
-    {
-      Name = "${local.project_name}-ecr-dkr-endpoint"
-    }
-  )
-}
-
-# CloudWatch Logs endpoint - Allows private ECS tasks to send container logs to CloudWatch without NAT
-resource "aws_vpc_endpoint" "logs" {
-  vpc_id              = aws_vpc.main.id
-  service_name        = "com.amazonaws.${var.aws_region}.logs"
-  vpc_endpoint_type   = "Interface"
-  private_dns_enabled = true
-
-  subnet_ids = [
-    aws_subnet.private_a.id,
-    aws_subnet.private_b.id
-  ]
-
-  security_group_ids = [
-    aws_security_group.vpc_endpoints.id
-  ]
-
-  tags = merge(
-    local.common_tags,
-    {
-      Name = "${local.project_name}-logs-endpoint"
-    }
-  )
-}
-
-data "aws_prefix_list" "s3" {
-  name = "com.amazonaws.${var.aws_region}.s3"
-}

@@ -1,18 +1,24 @@
-# ALB Security Group
+# Looks up the AWS-managed S3 prefix list for this region
+# so ECS can access S3 privately over HTTPS
+data "aws_prefix_list" "s3" {
+  name = "com.amazonaws.${var.aws_region}.s3"
+}
 
+# ALB Security Group
 resource "aws_security_group" "alb" {
-  name        = "${local.project_name}-alb-sg"
+  name        = "${var.project_name}-alb-sg"
   description = "Security group for application load balancer"
-  vpc_id      = aws_vpc.main.id
+  vpc_id      = var.vpc_id
 
   tags = merge(
-    local.common_tags,
+    var.common_tags,
     {
-      Name = "${local.project_name}-alb-sg"
+      Name = "${var.project_name}-alb-sg"
     }
   )
 }
 
+# Allows public HTTP traffic to the ALB
 resource "aws_vpc_security_group_ingress_rule" "alb_http" {
   security_group_id = aws_security_group.alb.id
 
@@ -22,6 +28,7 @@ resource "aws_vpc_security_group_ingress_rule" "alb_http" {
   ip_protocol = "tcp"
 }
 
+# Allows public HTTPS traffic to the ALB
 resource "aws_vpc_security_group_ingress_rule" "alb_https" {
   security_group_id = aws_security_group.alb.id
 
@@ -32,82 +39,85 @@ resource "aws_vpc_security_group_ingress_rule" "alb_https" {
 }
 
 # ECS Security Group
-
 resource "aws_security_group" "ecs" {
-  name        = "${local.project_name}-ecs-sg"
+  name        = "${var.project_name}-ecs-sg"
   description = "Security group for ECS Fargate tasks"
-  vpc_id      = aws_vpc.main.id
+  vpc_id      = var.vpc_id
 
   tags = merge(
-    local.common_tags,
+    var.common_tags,
     {
-      Name = "${local.project_name}-ecs-sg"
+      Name = "${var.project_name}-ecs-sg"
     }
   )
 }
 
+# Allows traffic to ECS only from the ALB on port 8080
 resource "aws_vpc_security_group_ingress_rule" "ecs_from_alb" {
   security_group_id = aws_security_group.ecs.id
 
-  referenced_security_group_id = aws_security_group.alb.id # Allow traffic from the ALB security group only 
+  referenced_security_group_id = aws_security_group.alb.id
 
   from_port   = 8080
   to_port     = 8080
   ip_protocol = "tcp"
 }
 
-# VPC Endpoints
-
+# VPC Endpoint Security Group
 resource "aws_security_group" "vpc_endpoints" {
-  name        = "${local.project_name}-vpc-endpoints-sg"
+  name        = "${var.project_name}-vpc-endpoints-sg"
   description = "Security group for interface VPC endpoints"
-  vpc_id      = aws_vpc.main.id
+  vpc_id      = var.vpc_id
 
   tags = merge(
-    local.common_tags,
+    var.common_tags,
     {
-      Name = "${local.project_name}-vpc-endpoints-sg"
+      Name = "${var.project_name}-vpc-endpoints-sg"
     }
   )
 }
 
+# Allows HTTPS traffic to interface endpoints only from ECS tasks
 resource "aws_vpc_security_group_ingress_rule" "vpce_from_ecs" {
   security_group_id = aws_security_group.vpc_endpoints.id
 
-  referenced_security_group_id = aws_security_group.ecs.id # Allow traffic from the ECS security group only 
+  referenced_security_group_id = aws_security_group.ecs.id
 
   from_port   = 443
   to_port     = 443
   ip_protocol = "tcp"
 }
 
+# Allows ECS tasks to communicate with the interface VPC endpoints over HTTPS
 resource "aws_vpc_security_group_egress_rule" "ecs_to_vpc_endpoints" {
   security_group_id = aws_security_group.ecs.id
 
-  referenced_security_group_id = aws_security_group.vpc_endpoints.id # Allow traffic to the VPC endpoints security group only
+  referenced_security_group_id = aws_security_group.vpc_endpoints.id
 
-  to_port     = 443
   from_port   = 443
+  to_port     = 443
   ip_protocol = "tcp"
-
 }
 
+# Allows the ALB to forward traffic to ECS tasks on port 8080
 resource "aws_vpc_security_group_egress_rule" "alb_to_ecs" {
   security_group_id = aws_security_group.alb.id
 
-  referenced_security_group_id = aws_security_group.ecs.id # Allow traffic from ALB to the ECS 
+  referenced_security_group_id = aws_security_group.ecs.id
 
-  to_port     = 8080
   from_port   = 8080
+  to_port     = 8080
   ip_protocol = "tcp"
 }
 
+# Allows ECS tasks to communicate with S3 over HTTPS
+# using the AWS-managed S3 prefix list
 resource "aws_vpc_security_group_egress_rule" "ecs_to_s3" {
   security_group_id = aws_security_group.ecs.id
 
-  prefix_list_id = data.aws_prefix_list.s3.id # Allow traffic to S3 prefix list only
+  prefix_list_id = data.aws_prefix_list.s3.id
 
-  to_port     = 443
   from_port   = 443
+  to_port     = 443
   ip_protocol = "tcp"
 }
