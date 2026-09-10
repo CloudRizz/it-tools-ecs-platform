@@ -12,22 +12,24 @@ data "aws_iam_policy_document" "ecs_task_execution_assume_role" {
   }
 }
 
-# Execution role used by ECS to pull container images and send logs
+# Execution role used by ECS to pull container images
+# and send container logs to CloudWatch
 resource "aws_iam_role" "ecs_task_execution" {
-  name = "${local.project_name}-ecs-task-execution-role"
+  name = "${var.project_name}-ecs-task-execution-role"
 
   assume_role_policy = data.aws_iam_policy_document.ecs_task_execution_assume_role.json
 
   tags = merge(
-    local.common_tags,
+    var.common_tags,
     {
-      Name = "${local.project_name}-ecs-task-execution-role"
+      Name = "${var.project_name}-ecs-task-execution-role"
     }
   )
 }
-# Attach AWS-managed permissions required for ECR image pulls and CloudWatch logging
+
+# Attaches the AWS-managed ECS task execution policy
+# required for ECR image pulls and CloudWatch logging
 resource "aws_iam_role_policy_attachment" "ecs_task_execution_policy" {
   role       = aws_iam_role.ecs_task_execution.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
-

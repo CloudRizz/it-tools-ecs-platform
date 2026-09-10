@@ -1,29 +1,34 @@
+# Looks up the existing ECR repository containing the IT Tools image
+data "aws_ecr_repository" "app" {
+  name = var.project_name
+}
+
 # ECS cluster used to run the IT Tools Fargate service
 resource "aws_ecs_cluster" "main" {
-  name = "${local.project_name}-cluster"
+  name = "${var.project_name}-cluster"
 
   tags = merge(
-    local.common_tags,
+    var.common_tags,
     {
-      Name = "${local.project_name}-cluster"
+      Name = "${var.project_name}-cluster"
     }
   )
 }
 
 # Task definition describing how the IT Tools container should run
 resource "aws_ecs_task_definition" "main" {
-  family                   = local.project_name
+  family                   = var.project_name
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
 
   cpu    = 256
   memory = 512
 
-  execution_role_arn = aws_iam_role.ecs_task_execution.arn
+  execution_role_arn = var.execution_role_arn
 
   container_definitions = jsonencode([
     {
-      name  = local.project_name
+      name  = var.project_name
       image = "${data.aws_ecr_repository.app.repository_url}:${var.image_tag}"
 
       essential = true
@@ -39,9 +44,9 @@ resource "aws_ecs_task_definition" "main" {
         logDriver = "awslogs"
 
         options = {
-          "awslogs-group"         = aws_cloudwatch_log_group.ecs.name
+          "awslogs-group"         = var.log_group_name
           "awslogs-region"        = var.aws_region
-          "awslogs-stream-prefix" = local.project_name
+          "awslogs-stream-prefix" = var.project_name
         }
       }
     }
@@ -50,7 +55,7 @@ resource "aws_ecs_task_definition" "main" {
 
 # ECS service keeps the IT Tools task running in the private subnets
 resource "aws_ecs_service" "app" {
-  name            = "${local.project_name}-service"
+  name            = "${var.project_name}-service"
   cluster         = aws_ecs_cluster.main.id
   task_definition = aws_ecs_task_definition.main.arn
 
@@ -58,32 +63,25 @@ resource "aws_ecs_service" "app" {
   launch_type   = "FARGATE"
 
   network_configuration {
-    subnets = [
-      aws_subnet.private_a.id,
-      aws_subnet.private_b.id
-    ]
+    subnets = var.private_subnet_ids
 
     security_groups = [
-      aws_security_group.ecs.id
+      var.ecs_security_group_id
     ]
 
     assign_public_ip = false
   }
 
   load_balancer {
-    target_group_arn = aws_lb_target_group.app.arn
-    container_name   = local.project_name
+    target_group_arn = var.target_group_arn
+    container_name   = var.project_name
     container_port   = 8080
   }
 
-  depends_on = [
-    aws_lb_listener.https
-  ]
-
   tags = merge(
-    local.common_tags,
+    var.common_tags,
     {
-      Name = "${local.project_name}-service"
+      Name = "${var.project_name}-service"
     }
   )
 }
