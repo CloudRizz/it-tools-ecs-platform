@@ -25,6 +25,31 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+       # Debug the GitHub OIDC token claims without exposing the token itself
+      - name: Inspect OIDC claims
+        run: |
+          TOKEN_RESPONSE=$(curl -sS \
+            -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=sts.amazonaws.com")
+
+          TOKEN=$(echo "$TOKEN_RESPONSE" | jq -r '.value')
+
+          PAYLOAD=$(echo "$TOKEN" | cut -d '.' -f2)
+
+          # Add Base64 padding if required
+          case $((${#PAYLOAD} % 4)) in
+            2) PAYLOAD="${PAYLOAD}==" ;;
+            3) PAYLOAD="${PAYLOAD}=" ;;
+          esac
+
+          echo "$PAYLOAD" | tr '_-' '/+' | base64 -d | jq '{
+            sub,
+            aud,
+            repository,
+            repository_owner,
+            ref
+          }'
+
       # Authenticate to AWS using GitHub OIDC instead of long-lived access keys
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
