@@ -32,7 +32,9 @@ I first deployed the application manually to understand how the AWS components w
 
 ## Demo
 
-<video controls src="docs/images/Recording 2026-09-10 163416.mp4" title="Title"></video>
+https://github.com/user-attachments/assets/fa1489bc-1522-47a4-ad0d-b8080ce39ef7
+
+
 
 The deployed application was available at:
 
