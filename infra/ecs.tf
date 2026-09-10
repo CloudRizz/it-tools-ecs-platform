@@ -24,7 +24,7 @@ resource "aws_ecs_task_definition" "main" {
   container_definitions = jsonencode([
     {
       name  = local.project_name
-      image = "${aws_ecr_repository.app.repository_url}:${var.image_tag}"
+      image = "${data.aws_ecr_repository.app.repository_url}:${var.image_tag}"
 
       essential = true
 
