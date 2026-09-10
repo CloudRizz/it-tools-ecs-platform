@@ -12,3 +12,4 @@ output "ecs_cluster_name" {
   description = "ECS cluster running the IT Tools service"
   value       = aws_ecs_cluster.main.name
 }
+# Final deployment validation
