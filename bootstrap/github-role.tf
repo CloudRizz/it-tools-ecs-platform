@@ -22,7 +22,7 @@ data "aws_iam_policy_document" "github_actions_assume_role" {
       test     = "StringEquals"
       variable = "token.actions.githubusercontent.com:sub"
       values = [
-        "repo:CloudRizz@154384774/it-tools-ecs-platform@1358146769:ref:refs/heads/main"
+        "repo:CloudRizz/it-tools-ecs-platform:ref:refs/heads/main"
       ]
     }
   }
