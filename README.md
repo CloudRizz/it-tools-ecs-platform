@@ -1567,7 +1567,7 @@ Docker Build               ✅
 Docker Push                ✅
 ```
 
-<!-- Add Application Pipeline screenshot here -->
+![Application Pipeline Deployed](<docs/images/application pipeline deployed.png>)
 
 ---
 
@@ -1583,7 +1583,7 @@ workflow_run
 Terraform Deploy ✅
 ```
 
-<!-- Add Application → Terraform Deploy screenshot here -->
+![Terraform Deployed Success](<docs/images/application pipeline auto into terraform deploy.png>)
 
 ---
 
@@ -1598,8 +1598,8 @@ Terraform Init     ✅
 Terraform Destroy  ✅
 ```
 
-<!-- Add Terraform Destroy screenshot here -->
-
+![Terraform Destroy](<docs/images/all 3 pipelines completed.png>)
+s
 ---
 
 # Repository Structure
