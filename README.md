@@ -1,183 +1,641 @@
 # IT Tools — AWS ECS Fargate Platform
 
-A hands-on AWS and DevOps project where I took an existing open-source application and built the platform required to run it securely on AWS.
+A production-style AWS container platform built with:
 
-The application runs as a Docker container on **Amazon ECS Fargate**, behind an **Application Load Balancer**, with the Fargate tasks isolated inside **private subnets**.
+- Docker
+- Amazon ECS Fargate
+- Terraform
+- GitHub Actions
+- AWS OIDC
+- Route 53
+- ACM
+- CloudWatch
 
-The infrastructure is managed with **Terraform**, while deployments are automated through **GitHub Actions using AWS OIDC** — meaning no long-lived AWS access keys are stored in GitHub.
+I used the open-source **IT Tools** application as the workload and focused the project on the platform around it.
 
-This project wasn't just about getting a container running. I wanted to understand and build the complete path from source code to a working production-style deployment:
+The application runs inside **private ECS Fargate tasks**, behind an **internet-facing Application Load Balancer**, with infrastructure managed through **modular Terraform**.
 
-```text
-Application
-    ↓
-Docker
-    ↓
-Amazon ECR
-    ↓
-ECS Fargate
-    ↓
-Application Load Balancer
-    ↓
-Route 53 + HTTPS
-    ↓
-Users
-```
+CI/CD is handled by GitHub Actions.
 
-I first deployed the application manually to understand how the AWS components worked together. I then tore that environment down, redesigned it with private networking, rebuilt it using Terraform and finally automated the deployment through GitHub Actions.
+No long-lived AWS access keys are stored in GitHub.
 
-> **Project status:** Successfully deployed and validated end-to-end through GitHub Actions. The AWS infrastructure is destroyed after testing to avoid unnecessary ongoing cloud costs.
+> **Status:** Successfully deployed, tested and destroyed through GitHub Actions.
 
 ---
 
-## Demo
+# Demo
 
-https://github.com/user-attachments/assets/fa1489bc-1522-47a4-ad0d-b8080ce39ef7
-
-
-
-The deployed application was available at:
+Application:
 
 ```text
 https://it-tools.twrz.co.uk
 ```
 
-A dedicated health endpoint was also exposed:
+Health endpoint:
 
 ```text
 https://it-tools.twrz.co.uk/health
 ```
 
-Successful response:
+Expected response:
 
 ```json
 {"status":"ok"}
 ```
 
+### Application Demo
+
+https://github.com/user-attachments/assets/fa1489bc-1522-47a4-ad0d-b8080ce39ef7
+
 ---
 
-# What I Built
+# Project Overview
 
-The final platform includes:
+The aim of this project was not simply to get a Docker container running.
 
-- Dockerised Vue/Vite application
-- Multi-stage Docker build
-- Non-root Nginx runtime
-- Custom AWS VPC
-- Two Availability Zones
-- Public and private subnets
-- Private ECS Fargate workloads
-- No public IP addresses on ECS tasks
-- No NAT Gateway
-- Private AWS connectivity through VPC endpoints
-- Amazon ECR container registry
+I wanted to understand the full path from source code to a working AWS deployment.
+
+That meant working with:
+
+- Docker
+- Amazon ECR
+- Amazon ECS
+- AWS Fargate
+- VPC networking
+- public and private subnets
+- security groups
 - Application Load Balancer
-- Route 53 DNS
-- ACM-managed HTTPS
-- CloudWatch container logging
-- Terraform Infrastructure as Code
-- Remote Terraform state in Amazon S3
-- GitHub Actions CI/CD
-- GitHub OIDC authentication to AWS
-- Immutable Git-SHA container images
-- Automated deployment health validation
-- Automated infrastructure teardown
-- Post-destroy AWS verification
+- Route 53
+- ACM
+- VPC endpoints
+- CloudWatch
+- Terraform
+- Terraform remote state
+- GitHub Actions
+- AWS OIDC
+- CI/CD
+- infrastructure teardown
+
+I first deployed the application manually.
+
+Once I understood how the AWS services fitted together, I removed that environment and rebuilt it using Terraform.
+
+The Terraform version also improved the architecture rather than simply copying the original manual setup.
+
+---
+
+# What Is IT Tools?
+
+[IT Tools](https://github.com/CorentinTh/it-tools) is an open-source collection of browser-based utilities for developers and IT professionals.
+
+It contains tools such as:
+
+- encoders
+- decoders
+- converters
+- generators
+- formatters
+- networking tools
+- text utilities
+- development helpers
+
+The application uses:
+
+```text
+Vue
+Vite
+Node.js
+```
+
+I did **not** build the IT Tools application.
+
+My work in this repository focuses on:
+
+- containerisation
+- AWS infrastructure
+- networking
+- security
+- Terraform
+- CI/CD
+- deployment
+- logging
+- teardown
+
+---
+
+# Why I Chose IT Tools
+
+I wanted a real application rather than another hello-world container.
+
+At the same time, I wanted the focus of the project to remain on Cloud and DevOps engineering.
+
+IT Tools worked well because:
+
+- it is a real open-source application
+- it builds into static frontend files
+- it can be served with Nginx
+- it is easy to containerise
+- it has a simple health endpoint
+- it does not require a database
+- it lets me focus on infrastructure
+
+### Benefit
+
+Most of my time could be spent on:
+
+```text
+AWS
+Docker
+Terraform
+Networking
+CI/CD
+Security
+```
+
+### Drawback
+
+Because IT Tools is mainly a static frontend, this project does not demonstrate:
+
+- databases
+- queues
+- backend APIs
+- secrets management
+- service-to-service communication
+
+Those would make sense in a future project.
+
+---
+
+# Why ECS Fargate?
+
+I deliberately chose **Amazon ECS Fargate** instead of:
+
+- EC2
+- Vercel
+- Netlify
+- static S3 hosting
+
+The point of the project was to demonstrate container infrastructure.
+
+---
+
+## Why Not EC2?
+
+EC2 would have worked.
+
+However, I would also have needed to manage:
+
+- the operating system
+- instance patching
+- Docker installation
+- host availability
+- instance sizing
+- container host maintenance
+
+Fargate removes most of that host management.
+
+I can focus on:
+
+- containers
+- networking
+- IAM
+- load balancing
+- scaling
+- deployment
+
+### Benefit
+
+Less infrastructure to manage at host level.
+
+### Drawback
+
+Fargate can be more expensive than well-utilised EC2 at larger scale.
+
+It also gives less control over the underlying compute host.
+
+For this project, the reduced management overhead was more useful.
+
+---
+
+## Why Not Vercel or Netlify?
+
+IT Tools could easily run on a simpler frontend hosting platform.
+
+That would be cheaper and easier.
+
+However, it would hide most of the infrastructure I wanted to practise.
+
+Using ECS meant I had to work with:
+
+- VPCs
+- subnets
+- routing
+- security groups
+- ECR
+- ECS
+- IAM
+- ALB
+- Route 53
+- ACM
+- CloudWatch
+- Terraform
+- GitHub Actions
+
+That made ECS a much better fit for the learning goal.
+
+---
+
+# Expected Usage
+
+This is a portfolio deployment rather than a production application with an established user base.
+
+During development I normally use:
+
+```hcl
+desired_count = 1
+```
+
+This keeps AWS costs lower while I repeatedly deploy and destroy the environment.
+
+The platform itself is already designed across **two Availability Zones**.
+
+The ECS desired task count can be increased without redesigning the network.
+
+For example:
+
+```hcl
+desired_count = 2
+```
+
+allows ECS to run multiple copies of the application across the configured private subnets.
+
+More healthy tasks provide:
+
+- more capacity
+- task redundancy
+- greater resilience
+
+For a production workload I would combine multiple tasks with **ECS Service Auto Scaling**.
 
 ---
 
 # Architecture
 
-![alt text](<docs/images/architecture -   it-tools.png>)
+![IT Tools AWS ECS Fargate Architecture](<docs/images/architecture - IT - tools.png>)
 
-## Architecture at a Glance
+The final platform is built across two Availability Zones in:
 
-| Layer | Implementation |
-|---|---|
-| Application | IT Tools / Vue / Vite |
-| Container | Docker |
-| Web Server | Nginx |
-| Registry | Amazon ECR |
-| Compute | Amazon ECS Fargate |
-| Networking | Custom VPC |
-| Load Balancing | Application Load Balancer |
-| DNS | Amazon Route 53 |
-| TLS | AWS Certificate Manager |
-| Private AWS Access | VPC Endpoints |
-| Logging | Amazon CloudWatch Logs |
-| Infrastructure | Terraform |
-| Terraform State | Amazon S3 |
-| CI/CD | GitHub Actions |
-| AWS Authentication | GitHub OIDC |
+```text
+eu-west-2
+```
+
+The ECS tasks are private.
+
+Only the Application Load Balancer accepts public application traffic.
 
 ---
 
-# Key Engineering Decisions
+# Architecture Summary
 
-## Private ECS Tasks
+| Layer | Technology |
+|---|---|
+| Application | IT Tools |
+| Frontend | Vue / Vite |
+| Runtime | Nginx |
+| Container | Docker |
+| Registry | Amazon ECR |
+| Compute | ECS Fargate |
+| Networking | Custom VPC |
+| Availability | Two AZs |
+| Load Balancer | ALB |
+| DNS | Route 53 |
+| HTTPS | ACM |
+| Logging | CloudWatch |
+| Private AWS Access | VPC Endpoints |
+| Infrastructure | Terraform |
+| Terraform State | S3 |
+| CI/CD | GitHub Actions |
+| AWS Authentication | OIDC |
 
-One of the main improvements between the first manual deployment and the final Terraform architecture was moving the application workloads into private subnets.
+---
 
-The final ECS service uses:
+# Request Flow
+
+A normal application request follows:
+
+```text
+User
+  ↓
+Route 53
+  ↓
+Application Load Balancer
+  ↓
+Target Group
+  ↓
+ECS Service
+  ↓
+Fargate Task
+  ↓
+Nginx
+  ↓
+IT Tools
+```
+
+The Fargate tasks do not have public IP addresses.
+
+---
+
+# VPC Design
+
+The final project uses a dedicated VPC rather than the default AWS VPC.
+
+The VPC spans:
+
+```text
+eu-west-2a
+eu-west-2b
+```
+
+Each Availability Zone contains:
+
+- one public subnet
+- one private subnet
+
+Conceptually:
+
+```text
+VPC
+│
+├── eu-west-2a
+│   ├── Public Subnet
+│   └── Private Subnet
+│
+└── eu-west-2b
+    ├── Public Subnet
+    └── Private Subnet
+```
+
+---
+
+# Why a Custom VPC?
+
+My first manual ECS deployment used the default VPC.
+
+That made the initial deployment easier to understand.
+
+For the final project, I wanted explicit control over:
+
+- subnet design
+- routing
+- internet access
+- private connectivity
+- security groups
+- resource placement
+
+### Benefit
+
+The network is fully defined in Terraform and can be recreated consistently.
+
+### Drawback
+
+A custom VPC adds complexity.
+
+There are more routing and security decisions to make.
+
+For this project, that complexity was useful because networking was one of the areas I wanted to understand better.
+
+---
+
+# Public and Private Subnets
+
+The Application Load Balancer is placed in the public subnets.
+
+ECS tasks are placed in the private subnets.
+
+```text
+Internet
+   ↓
+Public ALB
+   ↓
+Private ECS
+```
+
+The ECS service uses:
 
 ```hcl
 assign_public_ip = false
 ```
 
-The Fargate tasks therefore have no public IP address and cannot be contacted directly from the internet.
-
-Public traffic must travel through:
-
-```text
-Internet
-    ↓
-Route 53
-    ↓
-Application Load Balancer
-    ↓
-Target Group
-    ↓
-ECS Fargate
-```
-
-Only the Application Load Balancer is internet-facing.
+This means application tasks do not receive public IP addresses.
 
 ---
 
-## No NAT Gateway
+# Why Keep ECS Private?
 
-A normal private-subnet architecture often uses a NAT Gateway so workloads can reach external services.
+I did not want application containers directly exposed to the internet.
 
-For this workload I deliberately avoided one.
+All public requests must first pass through the ALB.
 
-The application is a static frontend served by Nginx and does not require arbitrary outbound internet connectivity from the Fargate task.
+### Benefits
 
-However, ECS still needs private access to AWS services to:
+- ECS tasks are not directly public
+- one controlled public entry point
+- clearer security-group rules
+- ALB health checking
+- HTTPS termination at the ALB
 
-- retrieve container images from ECR
-- retrieve ECR image layers from S3
-- send container logs to CloudWatch
+### Drawback
 
-I therefore used VPC endpoints instead.
+Private tasks still need access to some AWS services.
 
-| Service | Endpoint |
+That connectivity has to be designed deliberately.
+
+---
+
+# No NAT Gateway
+
+The project deliberately does **not** use a NAT Gateway.
+
+A common private subnet design looks like:
+
+```text
+Private ECS
+     ↓
+NAT Gateway
+     ↓
+Internet Gateway
+     ↓
+Internet
+```
+
+I did not need general internet access from the ECS task.
+
+The application is a static frontend served by Nginx.
+
+Once it is running, it has very limited outbound requirements.
+
+---
+
+# What ECS Still Needs
+
+Even a private ECS task needs access to AWS services.
+
+During startup it needs to:
+
+- retrieve ECR authentication information
+- access ECR
+- download image layers
+- send logs to CloudWatch
+
+Without NAT, those routes still need to exist.
+
+I solved this using VPC endpoints.
+
+---
+
+# VPC Endpoints
+
+The project uses:
+
+| Service | Endpoint Type |
 |---|---|
 | ECR API | Interface |
 | ECR DKR | Interface |
 | CloudWatch Logs | Interface |
-| Amazon S3 | Gateway |
+| S3 | Gateway |
 
-This allows the workload to remain private without providing a general outbound internet route.
+The path becomes:
 
-It was also a useful networking exercise because simply placing ECS in a private subnet is not enough — all of the services required during task startup still need reachable network paths.
+```text
+Private ECS
+     ↓
+VPC Endpoint
+     ↓
+AWS Service
+```
 
 ---
 
-# Network Security
+## Why VPC Endpoints?
 
-I used security-group references between components rather than opening internal services to broad CIDR ranges.
+### Benefits
 
-### Application Load Balancer
+- no general internet route from ECS
+- private connectivity to AWS services
+- no NAT Gateway
+- reduced NAT-related cost
+- tighter network access
+
+### Drawbacks
+
+Interface endpoints have their own:
+
+- hourly cost
+- data-processing cost
+
+For workloads requiring lots of general internet access, NAT may be simpler.
+
+For this workload, endpoints were a better fit.
+
+---
+
+# High Availability Design
+
+The infrastructure spans two Availability Zones.
+
+The ALB uses both public subnets.
+
+The ECS service uses both private subnets.
+
+```text
+               ALB
+             ↙     ↘
+      eu-west-2a   eu-west-2b
+           ↓           ↓
+     Private       Private
+      Subnet        Subnet
+```
+
+The network therefore already supports a multi-AZ workload.
+
+---
+
+# Task Count and Availability
+
+During development:
+
+```hcl
+desired_count = 1
+```
+
+With one running task:
+
+```text
+Multi-AZ VPC          ✅
+Multi-AZ ALB          ✅
+Multiple app tasks    ❌
+Task redundancy       ❌
+```
+
+The architecture is multi-AZ capable, but the application only has one active task.
+
+---
+
+## Running Multiple Tasks
+
+With:
+
+```hcl
+desired_count = 2
+```
+
+ECS can distribute service tasks across the configured Availability Zones.
+
+Conceptually:
+
+```text
+                 ALB
+              ↙       ↘
+       eu-west-2a    eu-west-2b
+            ↓            ↓
+        ECS Task      ECS Task
+```
+
+If one task becomes unhealthy, the ALB can continue sending requests to another healthy target.
+
+---
+
+## Why More Tasks Improve Availability
+
+More healthy tasks provide:
+
+- more application capacity
+- task-level redundancy
+- greater resilience
+
+The important distinction is:
+
+> The infrastructure already supports high availability. Increasing the number of running ECS tasks allows the workload to make use of that design.
+
+More tasks do not solve every possible failure.
+
+A full production setup would also consider:
+
+- ECS placement
+- autoscaling
+- deployment rollback
+- monitoring
+- application-level failures
+
+---
+
+# Security Groups
+
+I use security-group references between components rather than broad internal CIDR rules.
+
+---
+
+## ALB Security Group
 
 Inbound:
 
@@ -186,7 +644,7 @@ Internet → TCP 80
 Internet → TCP 443
 ```
 
-HTTP traffic is redirected to HTTPS.
+HTTP redirects to HTTPS.
 
 Outbound:
 
@@ -194,65 +652,113 @@ Outbound:
 ALB → ECS :8080
 ```
 
-### ECS Fargate
+---
+
+## ECS Security Group
 
 Inbound:
 
 ```text
-ALB Security Group → ECS Security Group :8080
+ALB Security Group
+        ↓
+TCP 8080
 ```
 
 Outbound:
 
 ```text
-ECS → VPC Endpoint Security Group :443
+ECS → Endpoint Security Group :443
 ECS → S3 Prefix List :443
 ```
 
-### Interface Endpoints
+---
+
+## Endpoint Security Group
 
 Inbound:
 
 ```text
-ECS Security Group → Endpoint Security Group :443
+ECS Security Group
+        ↓
+TCP 443
 ```
 
-The application container itself is therefore never directly exposed to the internet.
+This creates clear traffic paths between each layer.
 
 ---
 
-# Multi-AZ Design
+# HTTPS
 
-The VPC spans two Availability Zones:
+The public application uses:
 
 ```text
-eu-west-2a
-eu-west-2b
+https://it-tools.twrz.co.uk
 ```
 
-Each Availability Zone has a public and private subnet.
+TLS is managed by AWS Certificate Manager.
 
-The Application Load Balancer spans both public subnets, while the ECS service can schedule tasks across both private subnets.
+HTTP requests are redirected:
 
-For the portfolio deployment I used:
-
-```hcl
-desired_count = 1
+```text
+HTTP :80
+   ↓
+HTTPS :443
 ```
 
-This kept the cost of repeated deployments lower while I built and tested the project.
+---
 
-The architecture supports scaling the service to two or more tasks across the two Availability Zones.
+# Route 53
 
-For a production workload I would run at least two tasks and explicitly maintain workload distribution across the Availability Zones.
+The existing hosted zone is:
+
+```text
+twrz.co.uk
+```
+
+The project does **not** create or own that zone.
+
+Terraform looks it up as an existing resource.
+
+It only manages the application-specific DNS records.
+
+### Why?
+
+Destroying this project must not delete unrelated DNS infrastructure.
+
+---
+
+# ACM
+
+Terraform creates the certificate for:
+
+```text
+it-tools.twrz.co.uk
+```
+
+It also creates the DNS validation records required by ACM.
+
+### Benefit
+
+Certificate creation and validation are managed through Terraform.
+
+### Drawback
+
+HTTPS introduces more dependencies between:
+
+- Route 53
+- ACM
+- ALB
+- Terraform
+
+It is more complex than HTTP-only hosting, but far closer to a real deployment.
 
 ---
 
 # Docker
 
-Before touching AWS, I made sure the application worked locally.
+Before deploying anything to AWS, I made sure the application worked locally.
 
-The application was built with:
+The application build uses:
 
 ```text
 Node.js 18.18.2
@@ -261,7 +767,11 @@ Vue
 Vite
 ```
 
-I then containerised it using a multi-stage Docker build.
+---
+
+# Multi-Stage Docker Build
+
+The Dockerfile uses a separate build and runtime stage.
 
 ## Build Stage
 
@@ -277,13 +787,15 @@ RUN corepack enable \
     && corepack prepare pnpm@9.11.0 --activate
 
 COPY package.json pnpm-lock.yaml ./
+
 RUN pnpm install --frozen-lockfile
 
 COPY . .
+
 RUN pnpm build
 ```
 
-The Node environment is only used to compile the application.
+---
 
 ## Runtime Stage
 
@@ -300,23 +812,58 @@ CMD ["nginx", "-g", "daemon off;"]
 
 Only the compiled frontend is copied into the final image.
 
-This keeps the Node.js build environment out of the production container.
+---
 
-I also deliberately used:
+## Why Multi-Stage?
+
+### Benefits
+
+- smaller runtime image
+- Node build tools are removed
+- cleaner build/runtime separation
+- less unnecessary software in production
+
+### Drawback
+
+The Dockerfile is slightly more complex.
+
+For this project, the cleaner runtime image was worth it.
+
+---
+
+# Non-Root Nginx
+
+The runtime uses:
 
 ```text
 nginxinc/nginx-unprivileged
 ```
 
-so Nginx does not run as root.
+The application listens on:
 
-During local validation I confirmed the running container used the Nginx non-root user.
+```text
+8080
+```
+
+### Benefit
+
+Nginx does not need to run as root.
+
+### Drawback
+
+The container and ALB configuration both need to account for port `8080`.
 
 ---
 
-# Application Health Check
+# Health Endpoint
 
-Nginx exposes a dedicated health endpoint:
+Nginx exposes:
+
+```text
+/health
+```
+
+Configuration:
 
 ```nginx
 location = /health {
@@ -325,245 +872,242 @@ location = /health {
 }
 ```
 
-The same health contract is reused throughout the project:
-
-```text
-Local Docker testing
-        ↓
-ALB Target Group
-        ↓
-ECS deployment
-        ↓
-GitHub Actions
-```
-
 Expected response:
 
 ```json
 {"status":"ok"}
 ```
 
-This means the pipeline validates the application itself rather than assuming that a successful Terraform apply means the service is actually usable.
+The ALB target group uses this endpoint to check task health.
+
+I also use it during manual validation.
 
 ---
 
-# Building the Platform
+# Local Testing
 
-## Stage 1 — Local Application
-
-I started by running IT Tools locally.
-
-This sounds simple, but it gave me an important baseline: if something later failed inside Docker or AWS, I already knew the application itself could build and run correctly.
-
----
-
-## Stage 2 — Docker
-
-I built and tested the container locally:
+Build:
 
 ```bash
 docker build -t it-tools:local ./app
+```
+
+Run:
+
+```bash
 docker run --rm -p 8080:8080 it-tools:local
 ```
 
-I then validated both the application and health endpoint:
+Test:
 
 ```bash
 curl -I http://localhost:8080
+```
+
+Health:
+
+```bash
 curl http://localhost:8080/health
 ```
 
 ---
 
+# How the Project Evolved
+
+I deliberately built the project in stages.
+
+---
+
+## Stage 1 — Local Application
+
+I first ran IT Tools locally.
+
+This gave me a known-good starting point before adding Docker.
+
+---
+
+## Stage 2 — Docker
+
+I containerised the application and tested:
+
+- build
+- Nginx
+- port 8080
+- SPA routing
+- `/health`
+- non-root runtime
+
+---
+
 ## Stage 3 — Manual AWS Deployment
 
-Before writing the Terraform implementation, I deployed the application manually.
+Before writing Terraform, I deployed the application manually.
 
-This was intentional.
+This helped me understand:
 
-I wanted to understand how the individual AWS services connected before asking Terraform to build them for me.
-
-The first architecture used:
-
-```text
-Docker
-   ↓
-ECR
-   ↓
-ECS Fargate
-   ↓
-Application Load Balancer
-   ↓
-Route 53
-   ↓
-ACM
-   ↓
-HTTPS
-```
-
-The initial ECS tasks ran in public subnets inside the default VPC with public IP addresses.
-
-That architecture was deliberately simple.
-
-It allowed me to understand and validate:
-
-- ECR image storage
-- ECS clusters
+- ECR
+- ECS
+- Fargate
+- IAM
 - task definitions
-- ECS services
-- Fargate networking
-- IAM execution roles
-- security groups
-- ALB listeners
+- services
+- ALB
 - target groups
 - Route 53
-- ACM certificates
+- ACM
 - CloudWatch
 
-Once the complete application path worked, I removed the project resources.
+The first version used:
+
+- default VPC
+- public ECS tasks
+- public IP addresses
+
+It was intentionally simple.
 
 ---
 
 ## Stage 4 — Terraform Redesign
 
-I then rebuilt the architecture with Terraform.
-
-Rather than simply reproducing the manual design, I improved it.
+Once the manual version worked, I removed it and redesigned the architecture.
 
 ```text
 MANUAL VERSION
 
 Default VPC
-Public ECS tasks
-Public task IPs
+Public ECS
+Public Task IPs
 
-        ↓ redesigned into ↓
+        ↓
 
-TERRAFORM VERSION
+FINAL VERSION
 
-Dedicated VPC
+Custom VPC
+Two Availability Zones
 Public ALB
-Private ECS tasks
-No public task IP
+Private ECS
+No Public Task IP
 No NAT Gateway
-VPC endpoints
-Explicit security-group paths
+VPC Endpoints
+Terraform Modules
+GitHub Actions
 ```
 
-This was where the project moved from simply deploying a container to designing the platform around it.
+The Terraform version improved the design instead of simply recreating it.
 
 ---
 
 # Terraform Structure
 
-Terraform is split into two independent roots:
+Terraform is split into:
 
 ```text
-it-tools-ecs-platform/
-├── bootstrap/
-└── infra/
+bootstrap/
+infra/
 ```
 
-## `bootstrap/`
+They have separate responsibilities.
 
-The bootstrap stack creates the resources that must exist before automated deployments can run:
+---
 
-```text
-S3 Terraform state bucket
-Amazon ECR repository
-GitHub OIDC provider
-GitHub Actions IAM role
-GitHub Actions IAM policy
-```
+# Bootstrap
 
-## `infra/`
+The bootstrap stack creates:
 
-The main stack creates the application platform:
+- Amazon ECR repository
+- S3 Terraform state bucket
+- GitHub OIDC provider
+- GitHub Actions IAM role
+- GitHub Actions IAM policy
 
-```text
-VPC
-├── Internet Gateway
-├── Public Subnets
-├── Private Subnets
-├── Route Tables
-├── ECR VPC Endpoints
-├── CloudWatch Logs Endpoint
-└── S3 Gateway Endpoint
-
-Security
-├── ALB Security Group
-├── ECS Security Group
-├── Endpoint Security Group
-└── ECS Task Execution Role
-
-Application
-├── ECS Cluster
-├── ECS Task Definition
-├── ECS Service
-├── Application Load Balancer
-└── Target Group
-
-Observability
-└── CloudWatch Log Group
-
-DNS / TLS
-├── ACM Certificate
-├── DNS Validation
-└── Route 53 Application Record
-```
+These resources need to exist before the main CI/CD deployment can run.
 
 ---
 
 # Why Bootstrap Is Separate
 
-There is a dependency problem when creating the CI/CD infrastructure.
-
 GitHub Actions needs:
 
 ```text
-AWS authentication
+AWS Authentication
 +
-Terraform remote state
+Terraform State
 +
-ECR repository
+ECR
 ```
 
-before it can deploy the main infrastructure.
+before deploying the application.
 
-But it cannot create those resources through the pipeline if the pipeline already depends on them.
+That creates a dependency problem.
 
-I solved this by separating the bootstrap layer:
+I solve it like this:
 
 ```text
 Local Terraform
       ↓
 bootstrap/
       ↓
-S3 + ECR + OIDC + IAM
+OIDC + IAM + S3 + ECR
       ↓
 GitHub Actions
       ↓
 infra/
-      ↓
-Application Platform
 ```
 
-This also means the main application infrastructure can be destroyed without immediately removing the services Terraform and GitHub Actions depend on.
+### Benefit
+
+The CI/CD foundation stays in place when I destroy the application environment.
+
+### Drawback
+
+There are two Terraform lifecycles to understand.
+
+The application stack must be removed before bootstrap during a full teardown.
+
+---
+
+# Terraform Modules
+
+The main infrastructure is modularised.
+
+```text
+infra/modules/
+├── acm/
+├── alb/
+├── cloudwatch/
+├── ecs/
+├── iam/
+├── route53/
+├── security_groups/
+├── vpc/
+└── vpc_endpoints/
+```
+
+The root configuration calls these modules.
+
+### Benefits
+
+- easier to read
+- clearer responsibilities
+- easier to maintain
+- easier to reuse
+- cleaner root configuration
+
+### Drawback
+
+Modules create more files, variables and outputs.
+
+For very small projects that can be unnecessary.
+
+For this project, the separation made the infrastructure much easier to follow.
 
 ---
 
 # Terraform Remote State
 
-The main Terraform state is stored remotely in Amazon S3.
+The main Terraform state is stored in Amazon S3.
 
-The state bucket uses:
-
-- versioning
-- AES256 server-side encryption
-- blocked public access
-- Terraform state locking
-
-The backend is configured with:
+Backend:
 
 ```hcl
 terraform {
@@ -576,415 +1120,485 @@ terraform {
 }
 ```
 
-This allows GitHub Actions and local Terraform operations to work against the same infrastructure state.
+The bucket name is supplied during:
+
+```bash
+terraform init
+```
 
 ---
 
-# DNS and HTTPS
+## State Bucket Controls
 
-The application uses:
+The bucket uses:
+
+- versioning
+- AES256 encryption
+- blocked public access
+- native Terraform S3 locking
+
+### Benefit
+
+Local Terraform and GitHub Actions use the same state.
+
+### Drawback
+
+The state bucket becomes important infrastructure itself.
+
+That is why it belongs in bootstrap.
+
+---
+
+# CI/CD
+
+The project uses three GitHub Actions workflows:
 
 ```text
-it-tools.twrz.co.uk
+.github/workflows/
+├── app-pipeline.yml
+├── terraform-deploy.yml
+└── terraform-destroy.yml
 ```
 
-The parent Route 53 hosted zone already existed and is **not owned by this project**.
-
-Terraform looks up the existing hosted zone and only manages the records required by the application.
-
-It creates:
-
-- ACM certificate
-- ACM DNS validation record
-- Route 53 alias to the ALB
-
-HTTP traffic is redirected to HTTPS.
-
-Keeping the parent hosted zone outside the project is important because the project's teardown process must never delete unrelated DNS infrastructure.
+Each workflow has a clear responsibility.
 
 ---
 
-# CloudWatch Logging
+# Application Pipeline
 
-ECS container output is sent to:
+The Application Pipeline handles container delivery.
+
+It:
+
+- checks out the repository
+- authenticates to AWS through OIDC
+- logs into ECR
+- builds the Docker image
+- tags it with the Git commit SHA
+- pushes it to ECR
+
+Example:
 
 ```text
-/ecs/it-tools
+Git Commit
+c19d0dad...
+      ↓
+ECR Image
+it-tools:c19d0dad...
 ```
-
-using the ECS `awslogs` driver.
-
-The final task definition contains:
-
-```hcl
-logConfiguration = {
-  logDriver = "awslogs"
-
-  options = {
-    "awslogs-group"         = aws_cloudwatch_log_group.ecs.name
-    "awslogs-region"        = var.aws_region
-    "awslogs-stream-prefix" = local.project_name
-  }
-}
-```
-
-Because the Fargate tasks have no general internet route, a CloudWatch Logs VPC interface endpoint provides the private network path required to send the logs.
-
-During the final end-to-end deployment test, I verified that the running Fargate task successfully created and populated a CloudWatch log stream under `/ecs/it-tools`.
 
 ---
 
-# CI/CD Pipeline
+# Why Git SHA Tags?
 
-Deployment is automated using GitHub Actions.
+Each Docker image maps directly to a Git commit.
 
-```mermaid
-flowchart LR
+### Benefits
 
-    DEV[Push to main] --> GH[GitHub Actions]
-    GH --> OIDC[AWS OIDC]
-    OIDC --> IAM[IAM Deployment Role]
+- traceability
+- immutable deployment references
+- easier debugging
+- easier rollback identification
 
-    GH --> BUILD[Docker Build]
-    BUILD --> ECR[Amazon ECR]
+The ECR repository uses immutable tags.
 
-    GH --> PLAN[Terraform Plan]
-    PLAN --> APPLY[Terraform Apply]
+### Drawback
 
-    APPLY --> ECS[ECS Fargate]
-    ECS --> WAIT[Wait for Stability]
-    WAIT --> HEALTH[HTTPS /health]
+The same tag cannot simply be overwritten during a retry.
+
+The CI/CD workflow therefore needs to manage image tags carefully.
+
+---
+
+# Terraform Deploy Pipeline
+
+A successful Application Pipeline automatically triggers Terraform Deploy.
+
+This uses:
+
+```text
+workflow_run
 ```
+
+The deployment workflow uses the exact:
+
+```text
+head_sha
+```
+
+from the Application Pipeline.
+
+That SHA becomes the Terraform image tag.
+
+```text
+Application Pipeline
+     ↓
+Build SHA X
+     ↓
+Push SHA X
+     ↓
+Terraform Deploy
+     ↓
+Deploy SHA X
+```
+
+This keeps the application build and infrastructure deployment aligned.
+
+---
+
+# Terraform Deploy Steps
 
 The workflow performs:
 
-1. Checkout repository
-2. Authenticate to AWS through OIDC
-3. Authenticate Docker with ECR
-4. Check whether the commit image already exists
-5. Build the image when required
-6. Push it to ECR
-7. Initialise Terraform
-8. Generate a Terraform plan
-9. Apply the infrastructure
-10. Wait for ECS to become stable
-11. Call the public HTTPS `/health` endpoint
-12. Fail the deployment if the expected response is not returned
-
-The workflow is path-filtered to:
-
 ```text
-app/**
-infra/**
-.github/workflows/deploy.yml
+Checkout
+   ↓
+Set Image SHA
+   ↓
+AWS OIDC
+   ↓
+terraform fmt
+   ↓
+terraform init
+   ↓
+terraform validate
+   ↓
+terraform plan
+   ↓
+terraform apply
 ```
 
-README and documentation-only changes therefore don't unnecessarily deploy AWS infrastructure.
+Terraform Deploy can also be triggered manually with an optional image tag.
 
 ---
 
-# Keyless AWS Authentication
+# Terraform Destroy Pipeline
 
-One of the most important security decisions in the project was avoiding permanent AWS credentials in GitHub.
+Infrastructure teardown uses a separate workflow.
 
-The pipeline uses OpenID Connect:
+Destroy is deliberately manual.
+
+The workflow requires:
+
+```text
+DESTROY
+```
+
+to be entered before it continues.
+
+Flow:
+
+```text
+Manual Trigger
+      ↓
+Confirm DESTROY
+      ↓
+AWS OIDC
+      ↓
+Terraform Init
+      ↓
+Terraform Destroy
+```
+
+The GitHub workflow destroys:
+
+```text
+infra/
+```
+
+only.
+
+---
+
+# Why Bootstrap Is Retained
+
+The GitHub Destroy workflow leaves:
+
+- ECR
+- S3 Terraform state bucket
+- GitHub OIDC provider
+- GitHub Actions IAM role
+- GitHub Actions IAM policy
+
+These belong to:
+
+```text
+bootstrap/
+```
+
+### Benefit
+
+The application environment can be redeployed without recreating the CI/CD foundation.
+
+### Drawback
+
+A GitHub destroy does not mean every project-related resource has been removed.
+
+That is intentional.
+
+---
+
+# Full Teardown
+
+For complete removal I use:
+
+```bash
+./scripts/destroy.sh
+```
+
+The project also contains:
+
+```text
+scripts/verify-destroy.sh
+```
+
+Full teardown order:
+
+```text
+Destroy infra/
+      ↓
+Destroy bootstrap/
+      ↓
+Verify AWS
+```
+
+The order matters because the application Terraform state depends on the bootstrap S3 bucket.
+
+---
+
+# GitHub OIDC
+
+GitHub Actions authenticates to AWS using OpenID Connect.
 
 ```text
 GitHub Actions
       ↓
-Short-lived OIDC token
+OIDC Token
       ↓
-AWS IAM OIDC Provider
+AWS OIDC Provider
       ↓
-AssumeRoleWithWebIdentity
+STS AssumeRoleWithWebIdentity
       ↓
-Deployment IAM Role
+GitHub Actions IAM Role
       ↓
 AWS
 ```
 
-This means GitHub does not need stored credentials such as:
+No permanent:
 
 ```text
 AWS_ACCESS_KEY_ID
 AWS_SECRET_ACCESS_KEY
 ```
 
-The deployment role is dedicated to the project.
+are stored in GitHub.
 
----
+### Benefit
 
-# Immutable Deployments
+The workflow receives temporary credentials.
 
-Every container image is tagged using the full Git commit SHA.
+### Drawback
 
-Conceptually:
-
-```text
-Source Code
-    ↓
-Git Commit
-    ↓
-Docker Image : <commit-sha>
-    ↓
-Amazon ECR
-    ↓
-ECS Task Definition
-```
-
-The ECR repository also uses:
-
-```text
-IMMUTABLE image tags
-scan_on_push = true
-```
-
-This creates a direct link between the source code, Git history, container image and ECS deployment.
-
----
-
-## Making Immutable Images Retry-Safe
-
-Immutable tags introduced an interesting CI/CD problem.
-
-If a workflow failed after the image had already been pushed, retrying the same commit would attempt to push the same immutable tag again.
-
-Instead, the workflow checks ECR first:
-
-```text
-Does this SHA already exist?
-          │
-      ┌───┴───┐
-     Yes      No
-      │        │
-    Reuse    Build
-    image      ↓
-             Push
-```
-
-That makes deployment retries idempotent without weakening image immutability.
+OIDC trust policies are more complex than static access keys.
 
 ---
 
 # Problems I Had to Solve
 
-This project wasn't a straight-line build. Several failures became some of the most useful parts of the project.
+The troubleshooting was one of the most useful parts of this project.
 
-## GitHub OIDC Trust Failure
+---
 
-The first OIDC deployment failed with:
+## OIDC Trust Failure
+
+My first Application Pipeline failed with:
 
 ```text
 Not authorized to perform sts:AssumeRoleWithWebIdentity
 ```
 
-Rather than falling back to static AWS credentials, I inspected the identity claims GitHub was presenting to AWS.
+The IAM trust relationship did not match the GitHub repository identity correctly.
 
-The actual repository `sub` claim differed from the value I had originally assumed when writing the IAM trust policy.
+After correcting the OIDC subject configuration, the workflow successfully assumed the AWS role.
 
-I updated the trust relationship to match the identity GitHub actually presented.
-
-The next workflow successfully assumed the AWS role.
-
-This gave me a much better understanding of how:
+This helped me understand:
 
 ```text
-GitHub identity
-→ OIDC claims
-→ IAM trust policies
-→ STS role assumption
+GitHub Identity
+      ↓
+OIDC Claims
+      ↓
+IAM Trust
+      ↓
+AWS STS
 ```
-
-work together.
-
----
-
-## Terraform Partial Apply
-
-While building the VPC, I accidentally configured the default route as:
-
-```text
-0.0.0/0
-```
-
-instead of:
-
-```text
-0.0.0.0/0
-```
-
-Terraform had already created several resources by the time it reached the invalid configuration.
-
-After fixing the CIDR and running Terraform again, it used the existing state and created only the resources that were still missing.
-
-That was a useful practical demonstration of Terraform's reconciliation model: a failed apply does not mean blindly starting the entire deployment again.
 
 ---
 
 ## Private ECS Connectivity
 
-Moving ECS into private subnets introduced another important lesson.
+Moving ECS into private subnets caused another problem.
 
-A Fargate task being "private" doesn't remove its dependencies.
+The task still needed access to:
 
-It still needs to:
+- ECR API
+- ECR Docker registry
+- S3 image layers
+- CloudWatch Logs
 
-```text
-Pull image metadata from ECR
-          ↓
-Download ECR image layers from S3
-          ↓
-Start the container
-          ↓
-Send logs to CloudWatch
-```
+Without NAT, those services needed another network path.
 
-Without NAT, each of those paths had to be deliberately designed.
-
-That led to the ECR, S3 and CloudWatch VPC endpoint architecture used in the final platform.
+The solution was the VPC endpoint design used in the final architecture.
 
 ---
 
-# Final Deployment Validation
+## Image SHA Mismatch
 
-The final deployment was triggered through GitHub Actions and successfully completed the full pipeline.
+During testing I manually triggered Terraform Deploy with an image SHA that did not exist in ECR.
 
-The live health endpoint returned:
+ECS failed to pull the image.
 
-```text
-HTTP/2 200
-```
+That exposed a weakness in the deployment process.
 
-with:
-
-```json
-{"status":"ok"}
-```
-
-The ECS service was also verified as:
+The final solution was:
 
 ```text
-Desired tasks: 1
-Running tasks: 1
-Pending tasks: 0
+Application Pipeline
+      ↓
+Build SHA X
+      ↓
+Push SHA X
+      ↓
+workflow_run
+      ↓
+Terraform Deploy SHA X
 ```
 
-Finally, I confirmed that the running task had created a CloudWatch log stream inside:
+This removed the need to manually coordinate application image tags.
+
+---
+
+## Destroy IAM Permission
+
+The first GitHub Terraform Destroy test also exposed a missing IAM permission.
+
+Terraform needed:
+
+```text
+iam:ListInstanceProfilesForRole
+```
+
+while deleting the ECS execution role.
+
+I added the permission to the Terraform-managed GitHub Actions IAM policy.
+
+The destroy workflow then completed successfully.
+
+This showed me that deployment permissions and teardown permissions are not always identical.
+
+---
+
+# CloudWatch Logging
+
+ECS sends container logs to:
 
 ```text
 /ecs/it-tools
 ```
 
-This validated the complete path:
+using the `awslogs` driver.
+
+Because ECS does not have general internet access, CloudWatch Logs is reached through a VPC interface endpoint.
+
+During testing I confirmed the running task created CloudWatch log streams successfully.
+
+---
+
+# Final Deployment Validation
+
+The complete deployment path was tested:
 
 ```text
-Git Push
-   ↓
-GitHub Actions
-   ↓
-AWS OIDC
-   ↓
+Application Pipeline
+        ↓
 Docker Build
-   ↓
+        ↓
 Amazon ECR
-   ↓
-Terraform
-   ↓
+        ↓
+Terraform Deploy
+        ↓
 ECS Fargate
-   ↓
-CloudWatch
-   ↓
+        ↓
 ALB
-   ↓
+        ↓
 HTTPS
-   ↓
-/health
-   ↓
-200 OK
 ```
+
+I verified:
+
+```text
+Application: HTTP/2 200
+Health:      HTTP/2 200
+Response:    {"status":"ok"}
+```
+
+I also confirmed:
+
+```text
+Desired Tasks: 1
+Running Tasks: 1
+Pending Tasks: 0
+```
+
+and confirmed CloudWatch logs were being created.
 
 ---
 
-# Infrastructure Teardown
+# Pipeline Evidence
 
-Being able to deploy infrastructure is only half of the lifecycle.
+## Application Pipeline
 
-I also wanted the project to be safely and repeatably removable.
-
-The repository contains:
+Successful stages:
 
 ```text
-scripts/destroy.sh
-scripts/verify-destroy.sh
+Configure AWS Credentials  ✅
+Login to ECR               ✅
+Docker Build               ✅
+Docker Push                ✅
 ```
 
-Run:
-
-```bash
-./scripts/destroy.sh
-```
-
-The destroy process deliberately follows this order:
-
-```text
-Main application infrastructure
-            ↓
-Bootstrap infrastructure
-            ↓
-Independent AWS verification
-```
-
-The order matters because `infra/` stores its Terraform state inside the S3 bucket managed by `bootstrap/`.
-
-Destroying the state bucket first would remove the backend required to safely destroy the application stack.
+<!-- Add Application Pipeline screenshot here -->
 
 ---
 
-# Protecting Shared AWS Resources
+## Terraform Deploy
 
-The destroy process only removes resources owned by this project.
-
-It deliberately leaves resources such as:
+The successful Application Pipeline automatically triggered Terraform Deploy.
 
 ```text
-Existing Route 53 hosted zone → retained
-Default AWS VPC              → retained
-Default AWS subnets          → retained
-Unrelated AWS resources      → retained
+Application Pipeline ✅
+        ↓
+workflow_run
+        ↓
+Terraform Deploy ✅
 ```
 
-The existing Route 53 hosted zone is referenced through a Terraform data source rather than created by the project.
+<!-- Add Application → Terraform Deploy screenshot here -->
 
 ---
 
-# Post-Destroy Verification
+## Terraform Destroy
 
-After Terraform finishes, `verify-destroy.sh` independently checks AWS to confirm project resources are gone.
-
-It checks resources including:
-
-- ECS cluster
-- Application Load Balancer
-- project VPC
-- VPC endpoints
-- CloudWatch log group
-- ECR repository
-- GitHub Actions IAM role
-- GitHub OIDC provider
-- Terraform state bucket
-- Route 53 application record
-- ACM certificate
-
-During testing I also discovered that the AWS Resource Groups Tagging API can temporarily return stale metadata for resources that have already been deleted.
-
-I therefore changed the verification approach so that:
+The manually triggered Terraform Destroy workflow completed successfully.
 
 ```text
-Service-specific AWS APIs → authoritative
-Tagging API               → informational
+Confirmation       ✅
+AWS Authentication ✅
+Terraform Init     ✅
+Terraform Destroy  ✅
 ```
 
-This prevented stale tagging metadata from being mistaken for live infrastructure.
+<!-- Add Terraform Destroy screenshot here -->
 
 ---
 
@@ -992,322 +1606,328 @@ This prevented stale tagging metadata from being mistaken for live infrastructur
 
 ```text
 it-tools-ecs-platform/
-│
 ├── .github/
 │   └── workflows/
-│       └── deploy.yml
-│
+│       ├── app-pipeline.yml
+│       ├── terraform-deploy.yml
+│       └── terraform-destroy.yml
 ├── app/
 │   ├── Dockerfile
 │   ├── .dockerignore
 │   ├── nginx.conf
 │   ├── LICENSE
 │   └── application source
-│
 ├── bootstrap/
 │   ├── ecr.tf
 │   ├── github-oidc.tf
 │   ├── github-role.tf
-│   ├── locals.tf
-│   ├── outputs.tf
-│   ├── providers.tf
 │   ├── state.tf
-│   ├── variables.tf
-│   └── versions.tf
-│
+│   └── supporting Terraform files
 ├── infra/
-│   ├── alb.tf
 │   ├── backend.tf
-│   ├── data.tf
-│   ├── dns.tf
-│   ├── ecs.tf
-│   ├── iam.tf
-│   ├── locals.tf
-│   ├── logs.tf
-│   ├── network.tf
-│   ├── outputs.tf
-│   ├── providers.tf
-│   ├── security.tf
+│   ├── main.tf
 │   ├── variables.tf
-│   └── versions.tf
-│
+│   ├── outputs.tf
+│   └── modules/
+│       ├── acm/
+│       ├── alb/
+│       ├── cloudwatch/
+│       ├── ecs/
+│       ├── iam/
+│       ├── route53/
+│       ├── security_groups/
+│       ├── vpc/
+│       └── vpc_endpoints/
 ├── scripts/
 │   ├── destroy.sh
 │   └── verify-destroy.sh
-│
 ├── docs/
 │   └── images/
-│
-├── .gitignore
 └── README.md
-```
-
----
-
-# Reproducing the Project
-
-> ⚠️ **AWS costs:** Deploying this project creates billable resources, including an Application Load Balancer, ECS Fargate workloads and VPC interface endpoints.
-
-The repository contains environment-specific configuration from my deployment.
-
-Do not clone it and immediately run `terraform apply`.
-
-At minimum, review and replace:
-
-- Route 53 hosted zone
-- application domain
-- Terraform state bucket name
-- GitHub repository/OIDC identity
-- AWS region if required
-- GitHub repository variables
-- environment-specific resource names
-
-The main files to review are:
-
-```text
-infra/dns.tf
-bootstrap/variables.tf
-bootstrap/github-role.tf
-.github/workflows/deploy.yml
-scripts/destroy.sh
-scripts/verify-destroy.sh
-```
-
----
-
-## Prerequisites
-
-You will need:
-
-- AWS account
-- AWS CLI
-- Terraform
-- Docker
-- Git
-- GitHub repository
-- Route 53 hosted zone/domain
-
-AWS CLI authentication is required for the initial bootstrap deployment.
-
----
-
-## 1. Clone
-
-```bash
-git clone https://github.com/CloudRizz/it-tools-ecs-platform.git
-cd it-tools-ecs-platform
-```
-
-## 2. Update Configuration
-
-Replace the environment-specific values with values belonging to your AWS account and GitHub repository.
-
-## 3. Deploy Bootstrap
-
-```bash
-cd bootstrap
-
-terraform init
-terraform plan
-terraform apply
-```
-
-Retrieve the outputs:
-
-```bash
-terraform output
-```
-
-These provide the:
-
-- Terraform state bucket
-- GitHub Actions role ARN
-- ECR repository URL
-
-## 4. Configure GitHub Variables
-
-Create the following GitHub repository variables:
-
-```text
-AWS_REGION
-AWS_ROLE_ARN
-ECR_REPOSITORY_URL
-TF_STATE_BUCKET
-```
-
-These are configuration values — not long-lived AWS credentials.
-
-## 5. Deploy
-
-Push an application or infrastructure change to `main`.
-
-GitHub Actions will perform the main deployment automatically.
-
-## 6. Destroy
-
-When finished:
-
-```bash
-./scripts/destroy.sh
 ```
 
 ---
 
 # Security Controls
 
-Security controls implemented in the current project include:
+The current project includes:
 
-- private ECS workloads
-- no public ECS IP addresses
-- no NAT-based general outbound route
-- security-group-to-security-group rules
-- HTTPS public traffic
-- HTTP-to-HTTPS redirect
-- ACM-managed certificates
-- non-root Nginx container
-- GitHub OIDC authentication
-- no permanent AWS keys in GitHub
+- private ECS tasks
+- no public task IP addresses
+- ALB-only public ingress
+- HTTPS
+- ACM certificates
+- HTTP-to-HTTPS redirection
+- security-group references
+- VPC endpoints
+- no NAT Gateway
+- non-root Nginx
+- GitHub OIDC
+- no permanent AWS keys
 - immutable ECR image tags
 - ECR scan-on-push
 - encrypted Terraform state
-- blocked public access to Terraform state
-- private ECR connectivity
-- private CloudWatch connectivity
-- S3 Gateway Endpoint
-- dedicated ECS task execution role
+- blocked public state bucket
+- S3 native state locking
+- dedicated ECS execution IAM role
 
 ---
 
-# What I Would Improve Next
+# Main Design Trade-Offs
 
-The project is designed as a production-style portfolio platform rather than a complete enterprise environment.
+| Decision | Benefit | Drawback |
+|---|---|---|
+| ECS Fargate | No host management | Can cost more than EC2 |
+| Private ECS | Reduced public exposure | More networking complexity |
+| No NAT | Avoid NAT cost and open egress | Requires VPC endpoints |
+| VPC Endpoints | Private AWS connectivity | Interface endpoint cost |
+| Multi-AZ VPC | Supports resilient workloads | More network resources |
+| ALB | Health checks and balancing | Additional cost |
+| OIDC | No permanent AWS keys | More complex trust policy |
+| Terraform Modules | Cleaner infrastructure | More files and interfaces |
+| Git SHA Tags | Strong traceability | Tags cannot be overwritten |
+| Separate Bootstrap | Easy redeployment | Two Terraform lifecycles |
 
-The next improvements I would prioritise are:
+---
 
-### High Availability
+# Future Considerations
 
-Run at least two ECS tasks across the two Availability Zones rather than the cost-conscious single-task portfolio configuration.
+There are several areas I would improve if this became a real production platform.
 
-### Deployment Safety
+---
 
-Enable the ECS deployment circuit breaker with automatic rollback.
+## ECS Service Auto Scaling
 
-Generate a saved Terraform plan:
+The architecture already supports multiple tasks across two Availability Zones.
 
-```bash
-terraform plan -out=tfplan
-terraform apply tfplan
+I would add ECS Service Auto Scaling based on:
+
+- CPU
+- memory
+- ALB request count
+
+This would automatically increase or reduce task count depending on demand.
+
+---
+
+## Minimum Two Running Tasks
+
+For a real production workload I would normally run at least:
+
+```hcl
+desired_count = 2
 ```
 
-so the exact planned changes are what get deployed.
+rather than the single task used during development.
 
-### CI/CD Security
+This would give the application task-level redundancy across the existing multi-AZ architecture.
 
-Reduce the GitHub Actions IAM permissions further towards action/resource-level least privilege.
+---
 
-Add:
+## Deployment Circuit Breaker
 
-- protected GitHub production environment
-- deployment approval
-- branch protection
-- required status checks
-- immutable GitHub Action SHA pinning
+I would enable the ECS deployment circuit breaker.
 
-### Automated Validation
+This could automatically roll back failed ECS service deployments.
 
-Add:
+---
+
+## Terraform Plan Pipeline
+
+A separate pull-request pipeline could run:
 
 ```text
-terraform fmt -check
+terraform fmt
 terraform validate
-TFLint
-Checkov / tfsec
-Trivy
+terraform plan
 ```
 
-before deployment.
+before changes are merged.
 
-### Monitoring
+This would make infrastructure changes easier to review.
 
-Add:
+---
 
+## Terraform Security Scanning
+
+I would add:
+
+- TFLint
+- Checkov
+- tfsec
+
+These would provide additional infrastructure validation.
+
+---
+
+## Container Scanning
+
+I would add Trivy to scan the application image before deployment.
+
+---
+
+## Monitoring
+
+Future monitoring improvements could include:
+
+- CloudWatch alarms
+- ECS CPU alarms
+- ECS memory alarms
+- ALB unhealthy-target alarms
+- SNS notifications
 - ALB access logs
 - VPC Flow Logs
-- CloudWatch alarms
-- SNS notifications
-- ECS CPU/memory monitoring
-- unhealthy-target alerts
 
-### Runtime Security
+---
 
-Further harden the ECS container with:
+## GitHub Environment Protection
+
+For production I would consider:
+
+- protected environments
+- manual production approvals
+- branch protection
+- required status checks
+- GitHub Action SHA pinning
+
+---
+
+## Least-Privilege IAM
+
+The GitHub Actions IAM role is project-specific.
+
+I would continue reducing its permissions towards more granular resource-level access.
+
+---
+
+## ECR Lifecycle Policy
+
+Every application deployment creates an immutable Git-SHA image.
+
+Over time, old images would build up.
+
+I would add an ECR lifecycle policy to automatically remove older unused images.
+
+---
+
+## Container Hardening
+
+Additional runtime security could include:
 
 - read-only root filesystem
-- unnecessary Linux capability removal
-- explicit container health check
-- VPC endpoint policies
-
-### Container Lifecycle
-
-Add an ECR lifecycle policy to automatically remove old commit-SHA images.
+- explicit container health checks
+- reduced Linux capabilities
+- tighter filesystem permissions
+- stricter VPC endpoint policies
 
 ---
 
 # What I Learned
 
-The biggest takeaway from this project was understanding how the individual pieces of a container platform depend on one another.
+The biggest lesson from this project was that getting the container running is only one part of the problem.
 
-Before building it, "deploy a Docker container to ECS" sounds relatively simple.
-
-In practice:
+Once ECS became private, several dependencies became more obvious.
 
 ```text
-Private ECS task
-      ↓
-Needs ECR connectivity
-      ↓
-ECR layers depend on S3
-      ↓
-Logging needs CloudWatch connectivity
-      ↓
-Each network path needs security rules
-      ↓
-ALB needs healthy targets
-      ↓
-HTTPS needs DNS + certificate validation
-      ↓
-CI/CD needs secure AWS authentication
-      ↓
-Terraform needs reliable remote state
+Private ECS
+    ↓
+Needs ECR
+    ↓
+ECR layers use S3
+    ↓
+Logging needs CloudWatch
+    ↓
+Each service needs a network path
+    ↓
+Each path needs security rules
 ```
 
-Building each layer, breaking parts of it, troubleshooting the failures and then automating the entire process gave me a much stronger understanding of how AWS, networking, Terraform, containers and CI/CD fit together.
+I also gained a much clearer understanding of high availability.
 
-The project also reinforced an important DevOps principle for me:
+Simply drawing two Availability Zones does not make an application highly available.
 
-> A deployment isn't finished because the infrastructure exists. It is finished when the application is healthy, observable, repeatable and can also be safely removed.
+The platform must actually support workloads across them.
+
+In this project:
+
+```text
+ALB spans both AZs
+        +
+ECS uses subnets in both AZs
+        +
+Multiple tasks can run across them
+        =
+Multi-AZ workload capability
+```
+
+During development I use one task to reduce cost.
+
+Increasing the number of healthy tasks provides more:
+
+- capacity
+- redundancy
+- resilience
+
+without needing to redesign the platform.
+
+---
+
+# Final Takeaway
+
+This project started with a simple question:
+
+```text
+Can I deploy a Docker container to ECS?
+```
+
+It eventually became:
+
+```text
+How should I design,
+secure,
+automate,
+observe
+and remove
+the platform around it?
+```
+
+That was the most useful part of the project.
+
+It gave me hands-on experience with:
+
+- AWS
+- Docker
+- Terraform
+- ECS
+- networking
+- security
+- GitHub Actions
+- CI/CD
+- troubleshooting
+
+More importantly, it helped me understand **why** the infrastructure is designed this way rather than simply learning which commands create it.
 
 ---
 
 # Application Credit
 
-This project uses the open-source **IT Tools** application by Corentin Thomasset as the workload.
+This project uses the open-source **IT Tools** application by Corentin Thomasset.
 
-I did not create the IT Tools application itself.
+I did not create the upstream application.
 
-My work in this repository focuses on:
+My work focuses on:
 
-- containerisation
-- AWS architecture
+- Docker
+- AWS
 - networking
 - security
 - Terraform
 - CI/CD
 - deployment automation
 - operational validation
-- infrastructure teardown
+- teardown
 
-The upstream GPLv3 licence is retained within the `app/` directory.
+The upstream GPLv3 licence is retained in the `app/` directory.
 
 ---
 
@@ -1317,4 +1937,4 @@ The upstream GPLv3 licence is retained within the `app/` directory.
 
 Cloud / DevOps Engineer
 
-GitHub: CloudRizz
+GitHub: `CloudRizz`

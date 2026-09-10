@@ -170,6 +170,7 @@ data "aws_iam_policy_document" "github_actions_permissions" {
       "iam:DetachRolePolicy",
       "iam:PassRole",
       "iam:ListAttachedRolePolicies",
+      "iam:ListInstanceProfilesForRole",
       "iam:ListRolePolicies",
       "iam:GetPolicy",
       "iam:GetPolicyVersion",
