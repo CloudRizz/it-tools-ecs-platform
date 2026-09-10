@@ -8,7 +8,7 @@ The main Terraform deployment depends on resources that must already exist:
 
 - **S3 state bucket** – stores the remote Terraform state for `infra/`.
 - **GitHub OIDC provider** – allows GitHub Actions to authenticate to AWS without storing long-lived AWS access keys.
-- **GitHub Actions IAM role and policy** – provides the AWS permissions required by the deployment pipeline.
+- **GitHub Actions IAM role and policy** – provides the AWS permissions required by the deployment and destroy pipelines.
 - **ECR repository** – stores the Docker images built and pushed by GitHub Actions.
 
 This avoids a circular dependency where GitHub Actions would need AWS infrastructure in order to create the infrastructure it depends on.
