@@ -35,8 +35,8 @@ resource "aws_ecs_task_definition" "main" {
         }
       ]
 
-      log_configuration = {
-        log_Driver = "awslogs"
+      logConfiguration = {
+        logDriver = "awslogs"
 
         options = {
           "awslogs-group"         = aws_cloudwatch_log_group.ecs.name
