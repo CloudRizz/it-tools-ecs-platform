@@ -45,7 +45,7 @@ Expected response:
 
 ### Application Demo
 
-https://github.com/user-attachments/assets/fa1489bc-1522-47a4-ad0d-b8080ce39ef7
+[IT Tools Demo](https://github.com/user-attachments/assets/fa1489bc-1522-47a4-ad0d-b8080ce39ef7)
 
 ---
 
