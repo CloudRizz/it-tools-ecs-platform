@@ -14,6 +14,99 @@ resource "aws_vpc" "main" {
   )
 }
 
+# Restricts the default VPC security group.
+# Project resources use dedicated least-privilege security groups instead.
+resource "aws_default_security_group" "default" {
+  vpc_id = aws_vpc.main.id
+
+  ingress = []
+  egress  = []
+
+  tags = merge(
+    var.common_tags,
+    {
+      Name = "${var.project_name}-default-sg-restricted"
+    }
+  )
+}
+
+# CloudWatch log group for VPC Flow Logs
+resource "aws_cloudwatch_log_group" "vpc_flow_logs" {
+  # checkov:skip=CKV_AWS_158:CloudWatch default encryption is accepted for this portfolio environment; a customer-managed KMS key would add unnecessary cost and complexity.
+  name              = "/aws/vpc/${var.project_name}-flow-logs"
+  retention_in_days = 365
+
+  tags = merge(
+    var.common_tags,
+    {
+      Name = "${var.project_name}-vpc-flow-logs"
+    }
+  )
+}
+
+# IAM role assumed by the VPC Flow Logs service
+resource "aws_iam_role" "vpc_flow_logs" {
+  name = "${var.project_name}-vpc-flow-logs-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+
+    Statement = [
+      {
+        Effect = "Allow"
+
+        Principal = {
+          Service = "vpc-flow-logs.amazonaws.com"
+        }
+
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+
+  tags = var.common_tags
+}
+
+# Allows VPC Flow Logs to write records to CloudWatch
+resource "aws_iam_role_policy" "vpc_flow_logs" {
+  name = "${var.project_name}-vpc-flow-logs-policy"
+  role = aws_iam_role.vpc_flow_logs.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+
+    Statement = [
+      {
+        Effect = "Allow"
+
+        Action = [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+
+        Resource = "${aws_cloudwatch_log_group.vpc_flow_logs.arn}:*"
+      }
+    ]
+  })
+}
+
+# Records accepted and rejected network traffic across the VPC
+resource "aws_flow_log" "main" {
+  vpc_id = aws_vpc.main.id
+
+  traffic_type         = "ALL"
+  log_destination_type = "cloud-watch-logs"
+  log_destination      = aws_cloudwatch_log_group.vpc_flow_logs.arn
+  iam_role_arn         = aws_iam_role.vpc_flow_logs.arn
+
+  tags = merge(
+    var.common_tags,
+    {
+      Name = "${var.project_name}-vpc-flow-log"
+    }
+  )
+}
+
 # Public Subnet - eu-west-2a
 resource "aws_subnet" "public_a" {
   vpc_id                  = aws_vpc.main.id

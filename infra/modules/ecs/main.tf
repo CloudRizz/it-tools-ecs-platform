@@ -7,6 +7,11 @@ data "aws_ecr_repository" "app" {
 resource "aws_ecs_cluster" "main" {
   name = "${var.project_name}-cluster"
 
+  setting {
+    name  = "containerInsights"
+    value = "enabled"
+  }
+
   tags = merge(
     var.common_tags,
     {
@@ -26,17 +31,30 @@ resource "aws_ecs_task_definition" "main" {
 
   execution_role_arn = var.execution_role_arn
 
+  volume {
+    name = "tmp"
+  }
+
   container_definitions = jsonencode([
     {
       name  = var.project_name
       image = "${data.aws_ecr_repository.app.repository_url}:${var.image_tag}"
 
-      essential = true
+      essential              = true
+      readonlyRootFilesystem = true
 
       portMappings = [
         {
           containerPort = 8080
           protocol      = "tcp"
+        }
+      ]
+
+      mountPoints = [
+        {
+          sourceVolume  = "tmp"
+          containerPath = "/tmp"
+          readOnly      = false
         }
       ]
 
