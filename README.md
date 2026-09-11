@@ -75,7 +75,7 @@ Fargate allows me to work with containers, VPC networking, IAM, load balancing a
 
 This is a portfolio deployment rather than an application with an established production user base.
 
-The platform spans **two Availability Zones**, but one task means there is currently no task-level redundancy. For the portfolio I onyly ran 1 for the desired count to keep costs low.
+The platform spans **two Availability Zones**, but one task means there is currently no task-level redundancy. For the portfolio I only ran 1 for the desired count to keep costs low.
 
 
 ```hcl
@@ -553,17 +553,87 @@ No live IT Tools project resources detected.
 
 ---
 
+## Security & Observability Hardening
+
+After completing the original ECS platform, I carried out a second engineering pass focused on **CI/CD security, container hardening and observability**.
+
+### CI/CD Security
+
+Two automated security gates were added to the existing GitHub Actions workflows:
+
+```text
+Application Pipeline
+Docker Build
+     ↓
+Trivy Scan
+     ↓
+ECR Push
+```
+
+**Trivy** scans container images for HIGH and CRITICAL vulnerabilities before they are pushed to ECR. The pipeline is configured to fail when applicable vulnerabilities are detected.
+
+```text
+Terraform Deploy
+terraform validate
+     ↓
+Checkov
+     ↓
+terraform plan
+     ↓
+terraform apply
+```
+
+**Checkov** scans the Terraform configuration before infrastructure is planned or deployed, with failed checks blocking the pipeline.
+
+Final validation:
+
+```text
+Passed checks: 127
+Failed checks: 0
+Skipped checks: 14
+```
+
+The skipped checks are documented within the Terraform configuration and represent intentional portfolio-environment decisions or verified cross-module findings.
+
+### Infrastructure Hardening
+
+The security review also resulted in several infrastructure improvements:
+
+- read-only ECS container root filesystem with only `/tmp` writable for Nginx
+- ALB invalid HTTP header dropping
+- restricted default VPC security group
+- security group rule descriptions
+- ECS Container Insights
+- VPC Flow Logs to CloudWatch
+- ALB access logging to an encrypted S3 bucket
+- 30-day lifecycle policy for ALB logs
+
+The container hardening was tested locally before deployment. When Nginx required writable temporary storage, the root filesystem remained read-only and only `/tmp` was provided as writable storage.
+
+### Result
+
+The updated platform was successfully deployed through the hardened pipelines, application health was verified over HTTPS, and the environment was subsequently destroyed and checked using:
+
+```bash
+./scripts/verify-destroy.sh
+```
+
+```text
+TEARDOWN VERIFIED
+No live IT Tools project resources detected.
+```
+
 ## Future Improvements
 
 For a production workload I would add:
 
 - multiple ECS tasks
 - ECS Service Auto Scaling
-- CloudWatch alarms
+- CloudWatch alarms and alerting
 - AWS WAF
-- automated security scanning
 - deployment rollback controls
-- a dedicated Terraform plan/security pipeline
+- tighter action/resource-level IAM permissions
+- customer-managed KMS keys where required
 
 ---
 
